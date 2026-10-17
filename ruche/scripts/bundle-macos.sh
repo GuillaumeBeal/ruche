@@ -9,8 +9,8 @@
 #   ruche/scripts/bundle-macos.sh            # build, then bundle
 #   ruche/scripts/bundle-macos.sh --no-build # bundle an existing build
 #
-# Without a usable Metal compiler (Xcode license not accepted, or only the
-# Command Line Tools), the build enables the `runtime-shaders` feature.
+# The build needs Xcode's Metal compiler: GPUI compiles its shaders at build
+# time. The script stops with the setup commands when it is not usable.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -22,14 +22,18 @@ VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
 APP_BUNDLE="target/$APP_NAME.app"
 
 if [[ "${1:-}" != "--no-build" ]]; then
-  FEATURES=()
   # `xcrun -f metal` also finds the Xcode stub that only points at the separate
   # Metal Toolchain download, so run the compiler to know whether it is usable.
   if ! xcrun metal --version >/dev/null 2>&1; then
-    echo "No usable Metal compiler: building with --features runtime-shaders"
-    FEATURES=(--features runtime-shaders)
+    cat >&2 <<'MSG'
+error: no usable Metal compiler. Set up Xcode once, then rerun this script:
+  sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+  sudo xcodebuild -license accept
+  xcodebuild -downloadComponent MetalToolchain
+MSG
+    exit 1
   fi
-  cargo build -p dbflux --release "${FEATURES[@]}"
+  cargo build -p dbflux --release
 fi
 
 rm -rf "$APP_BUNDLE"

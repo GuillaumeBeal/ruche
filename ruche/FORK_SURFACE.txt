@@ -22,7 +22,3 @@ crates/dbflux_ui_windows/src/settings/about_section.rs
 resources/branding/glyph.svg
 resources/branding/stable/*
 packaging/icons/*
-
-# Opt-in `runtime-shaders` feature for macOS without a usable Metal compiler.
-crates/dbflux/Cargo.toml
-Cargo.lock

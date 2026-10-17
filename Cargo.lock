@@ -3112,7 +3112,6 @@ dependencies = [
  "embed-resource",
  "gpui-component",
  "gpui-pre",
- "gpui-pre-apple",
  "gpui-pre-platform",
  "interprocess",
  "libc",
