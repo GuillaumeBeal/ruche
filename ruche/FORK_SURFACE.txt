@@ -22,3 +22,11 @@ crates/dbflux_ui_windows/src/settings/about_section.rs
 resources/branding/glyph.svg
 resources/branding/stable/*
 packaging/icons/*
+
+# Pending upstream: changes merged from up/* branches. Remove each block once
+# DBFlux has merged the change and the next sync brings it back from main.
+# up/beekeeper-import-secrets
+Cargo.lock
+crates/dbflux_app/src/portability.rs
+crates/dbflux_portability/Cargo.toml
+crates/dbflux_portability/src/external/*
