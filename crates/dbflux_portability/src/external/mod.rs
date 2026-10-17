@@ -1,7 +1,8 @@
 /// External connection-profile importers.
 ///
 /// Each importer turns a foreign client's connection-storage format (DBeaver's
-/// `data-sources.json`, Beekeeper Studio's SQLite database, ...) into DBflux
+/// `data-sources.json`, Beekeeper Studio's SQLite database, Sequel Ace's
+/// favorites property list, ...) into DBflux
 /// `DbConfig` candidates. This module is pure logic: parsing and mapping only.
 /// I/O is the caller's job, with one deliberate exception — Beekeeper Studio
 /// stores connections in a SQLite file, so its importer opens that file
@@ -13,6 +14,7 @@
 /// in `ExternalImportOutcome`, while every other entry still imports.
 pub mod beekeeper;
 pub mod dbeaver;
+pub mod sequelace;
 
 use std::path::PathBuf;
 
@@ -172,6 +174,7 @@ pub fn importers() -> Vec<Box<dyn ConnectionImporter>> {
     vec![
         Box::new(dbeaver::DBeaverImporter),
         Box::new(beekeeper::BeekeeperImporter),
+        Box::new(sequelace::SequelAceImporter::new()),
     ]
 }
 
