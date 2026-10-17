@@ -2,8 +2,16 @@
 # Build Ruche and wrap it in a local macOS app bundle: target/Ruche.app.
 #
 # Mirrors the "Create app bundle" step of .github/workflows/build.yml with the
-# Ruche identity, and signs the bundle ad hoc so it runs locally. It is not
-# notarised: Gatekeeper still needs a Developer ID for distribution.
+# Ruche identity. It is not notarised: Gatekeeper still needs a Developer ID for
+# distribution.
+#
+# The bundle is signed with a stable code-signing identity when one exists:
+# macOS ties a keychain "Always Allow" to the app's signature, and an ad-hoc
+# signature changes with every build, so each rebuild would ask again for every
+# saved password (and a prompt left open past DBFlux's 5 s keyring timeout fails
+# the save). Set RUCHE_SIGN_IDENTITY to choose the identity; otherwise the first
+# "Apple Development" or "Developer ID Application" identity is used, and ad-hoc
+# signing remains the fallback.
 #
 # Usage (from the repository root):
 #   ruche/scripts/bundle-macos.sh            # build, then bundle
@@ -46,6 +54,16 @@ cp packaging/icons/dbflux.icns "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 sed -e "s/\${VERSION}/$VERSION/g" -e "s/\${APP_NAME}/$APP_NAME/g" -e "s/\${BUNDLE_ID}/$BUNDLE_ID/g" \
   resources/macos/Info.plist >"$APP_BUNDLE/Contents/Info.plist"
 
-codesign --force --deep --sign - "$APP_BUNDLE" >/dev/null
+SIGN_IDENTITY="${RUCHE_SIGN_IDENTITY:-}"
+if [[ -z "$SIGN_IDENTITY" ]]; then
+  SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null |
+    grep -E '"(Apple Development|Developer ID Application):' |
+    awk 'NR == 1 { print $2 }')"
+fi
+if [[ -z "$SIGN_IDENTITY" ]]; then
+  echo "warning: no code-signing identity found; signing ad hoc, so macOS will ask again for saved passwords after each build" >&2
+  SIGN_IDENTITY="-"
+fi
+codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_BUNDLE" >/dev/null
 
 echo "Built $APP_BUNDLE ($APP_NAME $VERSION, $BUNDLE_ID)"
