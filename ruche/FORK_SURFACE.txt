@@ -43,3 +43,5 @@ crates/dbflux_test_support/src/fake_driver.rs
 docs/es/drivers/s3.md
 docs/ko/drivers/s3.md
 docs/zh_Hans/drivers/s3.md
+# up/sequel-ace-import (builds on up/beekeeper-import-secrets)
+crates/dbflux_portability/src/external/sequelace/*

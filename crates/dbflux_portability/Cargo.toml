@@ -31,7 +31,12 @@ aes = { workspace = true }
 cbc = { workspace = true, features = ["alloc"] }
 hex = { workspace = true }
 hmac = "0.13"
+plist = "1"
 sha2 = { workspace = true }
+
+# Reads the passwords Sequel Ace keeps in the macOS keychain.
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
 
 [dev-dependencies]
 tempfile = "3"
