@@ -33,3 +33,13 @@ crates/dbflux_portability/src/external/*
 # up/macos-integrated-title-bar
 crates/dbflux/src/main.rs
 crates/dbflux_ui/src/ui/views/workspace/shell.rs
+# up/s3-bucket-field
+CHANGELOG.md
+crates/dbflux_core/src/connection/profile.rs
+crates/dbflux_core/src/pipeline/resolve.rs
+crates/dbflux_driver_s3/*
+crates/dbflux_storage/src/repositories/connection_driver_configs.rs
+crates/dbflux_test_support/src/fake_driver.rs
+docs/es/drivers/s3.md
+docs/ko/drivers/s3.md
+docs/zh_Hans/drivers/s3.md
