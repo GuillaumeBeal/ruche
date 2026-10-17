@@ -6,6 +6,7 @@ mod document_view;
 mod documents;
 mod facets;
 pub(crate) mod filter_bar;
+pub(crate) mod filter_rules;
 mod grid;
 pub(crate) mod mutation_confirm;
 pub(crate) mod mutation_executor;
@@ -836,6 +837,8 @@ pub struct DataGridPanel {
     /// Columns and Partitions views of a table whose connection offers them.
     /// Inert for other sources.
     table_views: table_views::TableViewsState,
+    /// The filter rules panel of a table browse. Inert for other sources.
+    filter_rules: filter_rules::FilterRulesState,
     pk_columns: Vec<String>,
     runner: DocumentTaskRunner,
     focus_handle: FocusHandle,
@@ -1431,6 +1434,7 @@ impl DataGridPanel {
             },
             collection,
             table_views: table_views::TableViewsState::default(),
+            filter_rules: filter_rules::FilterRulesState::default(),
             runner,
             focus_handle,
             panel_origin: Point::default(),

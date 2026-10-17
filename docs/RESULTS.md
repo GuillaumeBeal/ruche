@@ -99,6 +99,36 @@ joins resolved so far. Non-dotted input always keeps the raw-`WHERE` behavior.
 The filter input also offers schema-aware autocomplete (same navigation as the
 builder — see [Schema-aware autocomplete](QUERY_BUILDER.md#schema-aware-autocomplete)).
 
+### Filter rules
+
+On a table, the **Rules** button in the filter row opens a list of rules under
+it, for building the `WHERE` filter without typing SQL. Each rule has a
+checkbox that turns it on or off, a column, an operator and a value, and `+` /
+`−` buttons that add a rule after it or remove it. The operators follow the
+column's type:
+
+- Text: `=`, `≠`, contains, does not contain, starts with, does not start with,
+  ends with, does not end with, `LIKE`, `NOT LIKE`, `IN`, `BETWEEN`, is empty,
+  is not empty, `IS NULL`, `IS NOT NULL`.
+- Numbers: `=`, `≠`, `>`, `<`, `≥`, `≤`, `IN`, `BETWEEN`, `IS NULL`,
+  `IS NOT NULL`.
+- Dates: `=`, `≠`, is after, is before, is on or after, is on or before,
+  `BETWEEN`, `IS NULL`, `IS NOT NULL`.
+- Booleans: is true, is false, `IS NULL`, `IS NOT NULL`.
+
+`BETWEEN` takes two values, and `IN` takes a comma-separated list. A value typed
+for a number column is sent as a number when it reads as one. Operators the
+connection's driver does not support are not offered.
+
+Below the rules, choose **AND (all rules)** or **OR (any rule)**, then press
+**Apply filters** (or `Enter` in a value). DBFlux writes the matching condition
+into the `WHERE` input, quoted for the connection, and reloads the rows, so you
+can read or edit the SQL it produced. Rules that are turned off or have no value
+are skipped, and when none is left the filter is cleared. The rules stay as you
+left them while the tab is open. From the keyboard, the Toolbar entry of the
+grid's context menu (`m`) lists the Rules button and every control of the open
+panel.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="images/results/filtering-dark.webp">
   <img src="images/results/filtering-light.webp" alt="The customers table filtered by a WHERE condition typed in the filter bar">

@@ -20,8 +20,8 @@ use crate::data_grid_panel::DataGridPanel;
 
 /// What the stub connection was asked, for the assertions.
 #[derive(Default)]
-struct Calls {
-    browses: Vec<TableBrowseRequest>,
+pub(in crate::data_grid_panel) struct Calls {
+    pub(in crate::data_grid_panel) browses: Vec<TableBrowseRequest>,
     profiles: usize,
     partitions: usize,
     estimates: Vec<TableBrowseRequest>,
@@ -296,7 +296,7 @@ fn app_state_with(
     (app_state, profile_id)
 }
 
-fn open_table(
+pub(in crate::data_grid_panel) fn open_table(
     features: TableViewFeatures,
     cx: &mut TestAppContext,
 ) -> (

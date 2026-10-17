@@ -10,6 +10,7 @@ use crate::DataViewMode;
 use crate::chart::keyboard::step_time_range;
 use crate::data_grid_panel::documents::CollectionTab;
 use crate::data_grid_panel::documents::builder::BuilderSupport;
+use crate::data_grid_panel::filter_rules::FilterRulesAction;
 use crate::data_grid_panel::table_views::TableTab;
 use crate::data_grid_panel::value_panel::ValuePanelButton;
 use crate::data_grid_panel::{ChartRailTab, DataGridPanel, DataSource};
@@ -107,6 +108,9 @@ pub(crate) enum ToolbarAction {
     CountRows,
     /// Load all rows next to the footer's row count of a limited result.
     LoadAllRows,
+    /// The Rules button of a table's filter row and the controls of its
+    /// rules panel.
+    FilterRules(FilterRulesAction),
 }
 
 /// A control of the chart's custom range row.
@@ -131,7 +135,14 @@ impl CustomRangeControl {
 
 impl ToolbarAction {
     /// Stable, locale-independent id, used for the row's element id.
-    pub(crate) fn id(self) -> &'static str {
+    pub(crate) fn id(self) -> SharedString {
+        match self {
+            ToolbarAction::FilterRules(action) => action.id(),
+            other => SharedString::new_static(other.static_id()),
+        }
+    }
+
+    fn static_id(self) -> &'static str {
         match self {
             ToolbarAction::Export => "export",
             ToolbarAction::ClearFilter => "clear-filter",
@@ -200,6 +211,7 @@ impl ToolbarAction {
             ToolbarAction::HidePanel => "hide",
             ToolbarAction::CountRows => "count-rows",
             ToolbarAction::LoadAllRows => "load-all-rows",
+            ToolbarAction::FilterRules(_) => "filter-rules",
         }
     }
 
@@ -249,6 +261,7 @@ impl ToolbarAction {
             ToolbarAction::HidePanel => AppIcon::PanelBottomClose,
             ToolbarAction::CountRows => AppIcon::Hash,
             ToolbarAction::LoadAllRows => AppIcon::Download,
+            ToolbarAction::FilterRules(action) => action.icon(),
         }
     }
 
@@ -331,6 +344,12 @@ impl DataGridPanel {
         if filter_controls_shown && self.shows_table_column_picker() {
             actions.push(ToolbarAction::ColumnPicker);
         }
+
+        actions.extend(
+            self.filter_rules_toolbar_actions()
+                .into_iter()
+                .map(ToolbarAction::FilterRules),
+        );
 
         let current_tab = self.table_tab();
 
@@ -670,6 +689,7 @@ impl DataGridPanel {
             }
             ToolbarAction::CountRows => crate::labels::count_rows_label(),
             ToolbarAction::LoadAllRows => crate::labels::load_all_rows_label(),
+            ToolbarAction::FilterRules(action) => self.filter_rules_action_label(action),
         }
     }
 
@@ -855,6 +875,7 @@ impl DataGridPanel {
             ToolbarAction::HidePanel => self.request_hide(cx),
             ToolbarAction::CountRows => self.request_count_rows(cx),
             ToolbarAction::LoadAllRows => self.request_load_all_rows(cx),
+            ToolbarAction::FilterRules(action) => self.run_filter_rules_action(action, window, cx),
         }
 
         cx.notify();

@@ -1087,6 +1087,14 @@ impl TableViewMetrics {
     pub const FILTER_ROW_HEIGHT: Rems = ui(50.0);
     pub const FILTER_ROW_PADDING_X: Pixels = px(14.0);
     pub const FILTER_ROW_GAP: Pixels = px(8.0);
+    /// Filter rules panel under the filter row: 8 px vertical padding and
+    /// 6 px between rules; a 180 px column, a 160 px operator and a 160 px
+    /// AND / OR choice.
+    pub const FILTER_RULES_PADDING_Y: Pixels = px(8.0);
+    pub const FILTER_RULES_ROW_GAP: Pixels = px(6.0);
+    pub const FILTER_RULE_COLUMN_WIDTH: Rems = ui(180.0);
+    pub const FILTER_RULE_OPERATOR_WIDTH: Rems = ui(160.0);
+    pub const FILTER_RULES_COMBINATOR_WIDTH: Rems = ui(160.0);
 }
 
 /// Geometry of a document collection (P1DocTable, P2DocNested, P1DocSchema).
