@@ -284,6 +284,7 @@ fn map_connection(
         config,
         kind,
         secret: secret.map(SecretString::from),
+        ssh_secret: None,
         secret_skip_reason: None,
     })
 }
