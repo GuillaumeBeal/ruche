@@ -1,0 +1,39 @@
+# CI entry point of the Ruche fork. Upstream's tests.yml and style.yml only run
+# on main/dev, so this workflow calls them unchanged for the `ruche` branch and
+# adds the fork-surface check (ruche/FORK_SURFACE.txt).
+name: Ruche CI
+
+on:
+  push:
+    branches: [ruche]
+  pull_request:
+    branches: [ruche]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fork-surface:
+    name: Fork surface
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Fetch upstream main
+        run: |
+          git remote add upstream https://github.com/0xErwin1/dbflux.git
+          git fetch --no-tags upstream main
+      - name: Check changed files against ruche/FORK_SURFACE.txt
+        run: python3 ruche/scripts/fork_surface.py --upstream upstream/main
+
+  style:
+    name: Style
+    needs: fork-surface
+    uses: ./.github/workflows/style.yml
+
+  tests:
+    name: Tests
+    needs: fork-surface
+    uses: ./.github/workflows/tests.yml
