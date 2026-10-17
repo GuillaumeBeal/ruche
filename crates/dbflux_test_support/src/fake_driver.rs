@@ -335,6 +335,7 @@ impl DbDriver for FakeDriver {
                 access_key_id: get_optional_string(values, "access_key_id"),
                 endpoint: get_optional_string(values, "endpoint"),
                 path_style: false,
+                bucket: get_optional_string(values, "bucket"),
             },
             DbKind::ClickHouse => DbConfig::ClickHouse {
                 url: get_string(values, "url", "http://localhost:8123"),

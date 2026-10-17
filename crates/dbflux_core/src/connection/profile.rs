@@ -605,6 +605,11 @@ pub enum DbConfig {
         /// S3-compatible endpoints (MinIO) and some Cloudflare R2 setups.
         #[serde(default)]
         path_style: bool,
+        /// Bucket the connection is limited to. Set it when the credentials
+        /// cannot list buckets, such as a Cloudflare R2 token scoped to one
+        /// bucket: the connection then checks and lists only that bucket.
+        #[serde(default)]
+        bucket: Option<String>,
     },
     ClickHouse {
         url: String,
@@ -814,6 +819,7 @@ impl DbConfig {
             access_key_id: None,
             endpoint: None,
             path_style: false,
+            bucket: None,
         }
     }
 

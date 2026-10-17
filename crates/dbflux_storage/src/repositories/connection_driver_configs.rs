@@ -362,12 +362,16 @@ impl ConnectionDriverConfigDto {
                 access_key_id,
                 endpoint,
                 path_style,
+                bucket,
             } => {
                 dto.dynamo_region = Some(region.clone());
                 dto.dynamo_profile = profile.clone();
                 dto.dynamo_endpoint = endpoint.clone();
                 dto.s3_access_key_id = access_key_id.clone();
                 dto.s3_path_style = *path_style;
+                // A bucket is the object store's database: S3 has no other use
+                // for this column, so it needs no migration of its own.
+                dto.database_name = bucket.clone();
             }
             DbConfig::ClickHouse {
                 url,
@@ -614,6 +618,7 @@ impl ConnectionDriverConfigDto {
                 access_key_id: self.s3_access_key_id.clone(),
                 endpoint: self.dynamo_endpoint.clone(),
                 path_style: self.s3_path_style,
+                bucket: self.database_name.clone(),
             }),
             DbKind::ClickHouse => Some(DbConfig::ClickHouse {
                 url: self
@@ -1386,6 +1391,7 @@ mod tests {
             access_key_id: None,
             endpoint: None,
             path_style: false,
+            bucket: None,
         };
 
         let dto = ConnectionDriverConfigDto::from_db_config(profile_id.clone(), &config);
@@ -1403,12 +1409,14 @@ mod tests {
                 access_key_id,
                 endpoint,
                 path_style,
+                bucket,
             } => {
                 assert_eq!(region, "us-east-1");
                 assert_eq!(profile.as_deref(), Some("dev-sso"));
                 assert_eq!(access_key_id, None);
                 assert_eq!(endpoint, None);
                 assert!(!path_style);
+                assert_eq!(bucket, None);
             }
             other => panic!("unexpected config: {other:?}"),
         }
@@ -1436,6 +1444,7 @@ mod tests {
             access_key_id: Some("AKIAEXAMPLE".to_string()),
             endpoint: Some("http://localhost:9000".to_string()),
             path_style: true,
+            bucket: Some("reports".to_string()),
         };
 
         let dto = ConnectionDriverConfigDto::from_db_config(profile_id.clone(), &config);
@@ -1453,12 +1462,14 @@ mod tests {
                 access_key_id,
                 endpoint,
                 path_style,
+                bucket,
             } => {
                 assert_eq!(region, "us-east-1");
                 assert_eq!(profile, None);
                 assert_eq!(access_key_id.as_deref(), Some("AKIAEXAMPLE"));
                 assert_eq!(endpoint.as_deref(), Some("http://localhost:9000"));
                 assert!(path_style);
+                assert_eq!(bucket.as_deref(), Some("reports"));
             }
             other => panic!("unexpected config: {other:?}"),
         }

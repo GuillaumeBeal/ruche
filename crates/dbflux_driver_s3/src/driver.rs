@@ -96,6 +96,12 @@ pub static S3_FORM: LazyLock<DriverFormDef> = LazyLock::new(|| DriverFormDef {
                         "https://<account-id>.r2.cloudflarestorage.com",
                     ),
                     field(
+                        "bucket",
+                        "Bucket",
+                        FormFieldKind::Text,
+                        "optional — limit the connection to one bucket, for credentials that cannot list buckets",
+                    ),
+                    field(
                         "path_style",
                         "Force Path-Style Addressing",
                         FormFieldKind::Checkbox,
@@ -134,6 +140,7 @@ pub(crate) struct S3ProfileConfig {
     pub(crate) access_key_id: Option<String>,
     pub(crate) endpoint: Option<String>,
     pub(crate) path_style: bool,
+    pub(crate) bucket: Option<String>,
 }
 
 impl S3ProfileConfig {
@@ -183,6 +190,7 @@ impl DbDriver for S3Driver {
         let profile = trimmed_optional(values, "profile");
         let access_key_id = trimmed_optional(values, "access_key_id");
         let endpoint = trimmed_optional(values, "endpoint");
+        let bucket = trimmed_optional(values, "bucket");
         let path_style = values
             .get("path_style")
             .map(|value| value == "true")
@@ -194,6 +202,7 @@ impl DbDriver for S3Driver {
             access_key_id,
             endpoint,
             path_style,
+            bucket,
         })
     }
 
@@ -204,6 +213,7 @@ impl DbDriver for S3Driver {
             access_key_id,
             endpoint,
             path_style,
+            bucket,
         } = config
         else {
             return HashMap::new();
@@ -217,6 +227,7 @@ impl DbDriver for S3Driver {
             access_key_id.clone().unwrap_or_default(),
         );
         values.insert("endpoint".to_string(), endpoint.clone().unwrap_or_default());
+        values.insert("bucket".to_string(), bucket.clone().unwrap_or_default());
         values.insert(
             "path_style".to_string(),
             if *path_style { "true" } else { "" }.to_string(),
@@ -288,6 +299,7 @@ fn profile_config(config: &DbConfig) -> Result<S3ProfileConfig, DbError> {
         access_key_id,
         endpoint,
         path_style,
+        bucket,
     } = config
     else {
         return Err(DbError::InvalidProfile(
@@ -320,6 +332,11 @@ fn profile_config(config: &DbConfig) -> Result<S3ProfileConfig, DbError> {
             .filter(|value| !value.is_empty())
             .map(ToString::to_string),
         path_style: *path_style,
+        bucket: bucket
+            .as_ref()
+            .map(|value| value.trim())
+            .filter(|value| !value.is_empty())
+            .map(ToString::to_string),
     })
 }
 
@@ -372,8 +389,25 @@ fn build_client(
     Ok(Client::from_conf(builder.build()))
 }
 
+/// Checks the credentials against the endpoint. A connection limited to one
+/// bucket reads a single key of that bucket instead of listing buckets, which
+/// credentials scoped to the bucket are not allowed to do.
 fn probe_connection(client: &Client, config: &S3ProfileConfig) -> Result<(), DbError> {
     let runtime = runtime();
+
+    if let Some(bucket) = &config.bucket {
+        let request = client.list_objects_v2().bucket(bucket).max_keys(1);
+        runtime.block_on(request.send()).map_err(|error| {
+            classify_connection_error(S3_ERROR_FORMATTER.format_service_error(
+                &error,
+                config,
+                ErrorTarget::Bucket(bucket),
+            ))
+        })?;
+
+        return Ok(());
+    }
+
     runtime
         .block_on(client.list_buckets().send())
         .map_err(|error| {
@@ -698,6 +732,13 @@ fn degradation_warning(field: &str, formatted: &dbflux_core::FormattedError) -> 
 
 impl ObjectStoreConnection for S3Connection {
     fn list_buckets(&self) -> Result<Vec<BucketInfo>, DbError> {
+        if let Some(bucket) = &self.config.bucket {
+            return Ok(vec![BucketInfo {
+                name: bucket.clone(),
+                created_at: None,
+            }]);
+        }
+
         let runtime = runtime();
         let mut buckets = Vec::new();
         let mut continuation_token: Option<String> = None;
@@ -1598,15 +1639,53 @@ mod tests {
                 access_key_id,
                 endpoint,
                 path_style,
+                bucket,
             } => {
                 assert_eq!(region, "us-west-2");
                 assert_eq!(profile, None);
                 assert_eq!(access_key_id, None);
                 assert_eq!(endpoint, None);
                 assert!(!path_style);
+                assert_eq!(bucket, None);
             }
             other => panic!("expected DbConfig::S3, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn bucket_field_is_optional_and_round_trips_through_the_form() {
+        let bucket_field = S3_FORM
+            .tabs
+            .iter()
+            .flat_map(|tab| &tab.sections)
+            .flat_map(|section| &section.fields)
+            .find(|field| field.id == "bucket")
+            .expect("bucket field");
+        assert!(!bucket_field.required);
+
+        let driver = S3Driver::new();
+        let config = driver
+            .build_config(&form_values(&[
+                ("region", "auto"),
+                ("bucket", "  reports  "),
+            ]))
+            .expect("valid config");
+        assert!(matches!(
+            &config,
+            DbConfig::S3 { bucket: Some(bucket), .. } if bucket == "reports"
+        ));
+        assert_eq!(
+            driver
+                .extract_values(&config)
+                .get("bucket")
+                .map(String::as_str),
+            Some("reports")
+        );
+
+        let without_bucket = driver
+            .build_config(&form_values(&[("region", "auto"), ("bucket", "   ")]))
+            .expect("valid config");
+        assert!(matches!(without_bucket, DbConfig::S3 { bucket: None, .. }));
     }
 
     #[test]
@@ -1687,6 +1766,7 @@ mod tests {
             access_key_id: None,
             endpoint: None,
             path_style: false,
+            bucket: None,
         };
 
         let error = profile_config(&config).expect_err("blank region should be rejected");
@@ -1701,6 +1781,7 @@ mod tests {
             access_key_id: Some(" AKIA ".to_string()),
             endpoint: Some(" https://example.com ".to_string()),
             path_style: true,
+            bucket: Some(" reports ".to_string()),
         };
 
         let resolved = profile_config(&config).expect("valid config");
@@ -1709,6 +1790,7 @@ mod tests {
         assert_eq!(resolved.access_key_id, Some("AKIA".to_string()));
         assert_eq!(resolved.endpoint, Some("https://example.com".to_string()));
         assert!(resolved.path_style);
+        assert_eq!(resolved.bucket, Some("reports".to_string()));
     }
 
     #[test]
@@ -1719,6 +1801,7 @@ mod tests {
             access_key_id: Some("AKIASHOULDNOTLEAK".to_string()),
             endpoint: Some("https://minio.local:9000".to_string()),
             path_style: true,
+            bucket: None,
         };
 
         let detail = config.diagnostic_detail();
@@ -1910,6 +1993,7 @@ mod tests {
                 access_key_id: None,
                 endpoint: None,
                 path_style: false,
+                bucket: None,
             },
         };
 

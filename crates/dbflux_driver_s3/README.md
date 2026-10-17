@@ -13,6 +13,7 @@ AWS S3 and S3-compatible object-storage driver for DBFlux, built on the [`aws-sd
 ## Features
 
 - Object-storage driver classified as `DatabaseCategory::ObjectStorage`, connecting to AWS S3 and to S3-compatible endpoints (Cloudflare R2, MinIO) via either an AWS profile/SSO `AuthProfileRef` or static access-key credentials, with endpoint override and path-style addressing.
+- An optional Bucket limits the connection to one bucket: the connection is checked by listing one key of that bucket instead of calling `ListBuckets`, and only that bucket is listed. Credentials scoped to a single bucket, such as a Cloudflare R2 API token restricted to one bucket, can connect this way.
 - Bucket browsing: a dedicated buckets table (name, region, object count, size, versioning, created) with search, refresh, and bucket creation; the sidebar lists buckets flat, one level deep. The selected bucket's details strip also shows its default encryption (SSE-S3, SSE-KMS, or None) and its public-access blocking (Blocked, Partial, or Open) when the endpoint reports them.
 - Paginated per-level object navigation by default (AWS-console style, using the driver-returned continuation token), with an optional tree-mode toggle for non-paginated full expansion.
 - Split tree/preview layout in the object browser: object rows show key, size, storage class, and last-modified; directory rows show child object counts.
@@ -38,3 +39,4 @@ AWS S3 and S3-compatible object-storage driver for DBFlux, built on the [`aws-sd
 - MinIO-backed live integration tests require Docker and run with `cargo nextest run -p dbflux_driver_s3 --run-ignored all`.
 - Encryption and public access are read with `GetBucketEncryption` and `GetPublicAccessBlock` and are hidden from the details strip when the call is denied (`AccessDenied`) or unsupported (for example on some MinIO or R2 builds). A bucket without a public-access block configuration also shows no value. Public access reflects the bucket-level block settings only; account-level blocks, bucket policies, and ACLs are not evaluated.
 - No write-privilege probe: `Connection::probe_write_privilege` intentionally stays at the trait default (`WritePrivilege::Unknown`), since a reliable check would need `iam:SimulatePrincipalPolicy`, a permission the connecting role typically lacks.
+- A connection limited to one bucket shows no creation date for it, since that date only comes from `ListBuckets`.
