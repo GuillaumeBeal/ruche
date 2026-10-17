@@ -23,7 +23,9 @@ APP_BUNDLE="target/$APP_NAME.app"
 
 if [[ "${1:-}" != "--no-build" ]]; then
   FEATURES=()
-  if ! xcrun -f metal >/dev/null 2>&1; then
+  # `xcrun -f metal` also finds the Xcode stub that only points at the separate
+  # Metal Toolchain download, so run the compiler to know whether it is usable.
+  if ! xcrun metal --version >/dev/null 2>&1; then
     echo "No usable Metal compiler: building with --features runtime-shaders"
     FEATURES=(--features runtime-shaders)
   fi
