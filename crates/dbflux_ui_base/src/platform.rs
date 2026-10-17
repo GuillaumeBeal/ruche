@@ -15,11 +15,13 @@ use gpui::{
     div, px,
 };
 // Only the CSD title bar uses these, and it is compiled on Linux alone.
+#[cfg(target_os = "macos")]
+use dbflux_components::primitives::Text as MacTitleText;
 use gpui::InteractiveElement;
 #[cfg(target_os = "linux")]
 use gpui::{ClickEvent, Decorations, ParentElement, StatefulInteractiveElement, Styled};
 #[cfg(target_os = "macos")]
-use gpui::{ClickEvent, MouseMoveEvent};
+use gpui::{ClickEvent, MouseMoveEvent, ParentElement, Styled};
 #[cfg(target_os = "linux")]
 use gpui_component::ActiveTheme;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -39,7 +41,8 @@ pub struct TitleCrumb {
 /// runs them.
 pub type TitleBarHandler = Box<dyn Fn(&mut Window, &mut App) + 'static>;
 
-/// Title bar height for Linux CSD mode. Used for layout and client inset reporting.
+/// Title bar height for Linux CSD mode and for the title strip of secondary
+/// windows on macOS. Used for layout and client inset reporting.
 pub const TITLE_BAR_HEIGHT: gpui::Pixels = px(32.0);
 
 /// Top-left corner of the macOS window buttons in the main window, whose
@@ -53,6 +56,61 @@ pub const MACOS_TRAFFIC_LIGHT_POSITION: gpui::Point<gpui::Pixels> = gpui::Point 
 /// Width the workspace title bar keeps clear for the macOS window buttons, past
 /// its own left padding.
 pub const MACOS_TRAFFIC_LIGHTS_INSET: gpui::Pixels = px(66.0);
+
+/// Top-left corner of the macOS window buttons in secondary windows, centered
+/// in their `TITLE_BAR_HEIGHT` title strip.
+pub const MACOS_SECONDARY_TRAFFIC_LIGHT_POSITION: gpui::Point<gpui::Pixels> = gpui::Point {
+    x: px(14.0),
+    y: px(8.0),
+};
+
+/// The main window, whose title bar the workspace draws itself. Secondary
+/// windows draw the macOS title strip; the main window must not, even through
+/// an overlay that reuses a secondary window's view.
+#[cfg(target_os = "macos")]
+struct MainWindowId(gpui::WindowId);
+
+#[cfg(target_os = "macos")]
+impl gpui::Global for MainWindowId {}
+
+/// Records `window` as the main window. Call from the main window's title bar
+/// render; it is a no-op off macOS.
+pub fn mark_main_window(window: &Window, cx: &mut App) {
+    #[cfg(target_os = "macos")]
+    {
+        let window_id = window.window_handle().window_id();
+        if cx.try_global::<MainWindowId>().map(|main| main.0) != Some(window_id) {
+            cx.set_global(MainWindowId(window_id));
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    let _unused = (window, cx);
+}
+
+/// A secondary window on macOS outside full screen: its native title bar is
+/// transparent, so it draws the title strip under the window buttons.
+#[cfg(target_os = "macos")]
+fn is_macos_secondary_window(window: &Window, cx: &App) -> bool {
+    !window.is_fullscreen()
+        && cx
+            .try_global::<MainWindowId>()
+            .is_none_or(|main| main.0 != window.window_handle().window_id())
+}
+
+/// The title strip of a macOS secondary window: the window's own background
+/// with its title centered, draggable like the native title bar it replaces.
+#[cfg(target_os = "macos")]
+fn render_macos_title_strip(title: &str) -> Stateful<gpui::Div> {
+    csd_drag_area("macos-title-strip")
+        .flex()
+        .flex_shrink_0()
+        .items_center()
+        .justify_center()
+        .w_full()
+        .h(TITLE_BAR_HEIGHT)
+        .child(MacTitleText::body_sm(title.to_string()).muted_foreground())
+}
 
 /// Returns `true` when the current Linux desktop is expected to prefer app-drawn
 /// title bars instead of server-side decorations.
@@ -148,6 +206,11 @@ pub fn render_csd_title_bar_with_crumbs(
     crumbs: &[TitleCrumb],
     on_close: Option<TitleBarHandler>,
 ) -> Option<Stateful<gpui::Div>> {
+    #[cfg(target_os = "macos")]
+    if is_macos_secondary_window(window, cx) {
+        return Some(render_macos_title_strip(title));
+    }
+
     if !prepare_client_decorations(window) {
         return None;
     }
@@ -460,10 +523,20 @@ pub fn apply_main_window_options(options: &mut WindowOptions, min_width: f32, mi
 /// managers emit `WM_NORMAL_HINTS`, and platform-appropriate decorations.
 ///
 /// On Linux, requests CSD so secondary windows match the main window behavior and
-/// render their own title bars. On other platforms, requests server-side decorations.
+/// render their own title bars. On other platforms, requests server-side
+/// decorations; on macOS the native title bar is transparent and the window draws
+/// its title strip under the window buttons.
 pub fn apply_window_options(options: &mut WindowOptions, min_width: f32, min_height: f32) {
     apply_window_size_and_decorations(options, min_width, min_height);
     options.kind = floating_window_kind();
+
+    // The window draws its title strip through `render_csd_title_bar`, so the
+    // native title bar only keeps its buttons, as in the main window.
+    #[cfg(target_os = "macos")]
+    if let Some(titlebar) = options.titlebar.as_mut() {
+        titlebar.appears_transparent = true;
+        titlebar.traffic_light_position = Some(MACOS_SECONDARY_TRAFFIC_LIGHT_POSITION);
+    }
 }
 
 fn apply_window_size_and_decorations(options: &mut WindowOptions, min_width: f32, min_height: f32) {
