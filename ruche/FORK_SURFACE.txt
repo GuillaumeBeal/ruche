@@ -45,3 +45,21 @@ docs/ko/drivers/s3.md
 docs/zh_Hans/drivers/s3.md
 # up/sequel-ace-import (builds on up/beekeeper-import-secrets)
 crates/dbflux_portability/src/external/sequelace/*
+# up/grid-rule-filter
+crates/dbflux_components/src/tokens.rs
+crates/dbflux_i18n/locales/*
+crates/dbflux_ui_document/src/data_grid_panel/context_menu/toolbar.rs
+crates/dbflux_ui_document/src/data_grid_panel/filter_rules/*
+crates/dbflux_ui_document/src/data_grid_panel/mod.rs
+crates/dbflux_ui_document/src/data_grid_panel/render.rs
+crates/dbflux_ui_document/src/data_grid_panel/table_views.rs
+crates/dbflux_ui_document/src/data_grid_panel/table_views_tests.rs
+crates/dbflux_ui_document/src/data_grid_panel/tests/coverage.rs
+crates/dbflux_ui_document/src/keyboard_coverage.rs
+docs/KEYBOARD.md
+docs/RESULTS.md
+docs/es/KEYBOARD.md
+docs/es/RESULTS.md
+docs/ko/RESULTS.md
+docs/zh_Hans/KEYBOARD.md
+docs/zh_Hans/RESULTS.md
