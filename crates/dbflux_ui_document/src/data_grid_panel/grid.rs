@@ -27,8 +27,14 @@ impl DataGridPanel {
     /// Update the result data (for QueryResult source or after table fetch).
     pub fn set_result(&mut self, result: QueryResult, cx: &mut Context<Self>) {
         self.nearest_neighbors = None;
-        let category = Self::connection_category(&self.source, &self.app_state, cx);
-        self.view_config = Self::view_config_for(&self.source, category);
+        // A table keeps the view the user picked while its facets still offer
+        // it (a JSON table stays in Document across a reload).
+        let keeps_view = matches!(self.source, DataSource::Table { .. })
+            && self.data_view_modes(cx).contains(&self.view_config.mode);
+        if !keeps_view {
+            let source_facets = self.facets(cx);
+            self.view_config = Self::view_config_for(&self.source, &source_facets);
+        }
         self.chrome.derived_json = None;
         self.chrome.derived_text = None;
 
@@ -178,7 +184,11 @@ impl DataGridPanel {
         let document_patches = self.commits_document_patches(cx);
         let stepped_into = self.is_stepped_into();
 
-        let pk_indices: Vec<usize> = if !self.mutations_enabled() {
+        // Neighbor rows are read-only, but their key columns still are the
+        // table's key and keep the key icon.
+        let read_only_keys = self.nearest_neighbors.is_some();
+
+        let pk_indices: Vec<usize> = if !self.mutations_enabled() && !read_only_keys {
             Vec::new()
         } else if stepped_into {
             // Rows inside a nested value are addressed by their path in the
@@ -303,7 +313,12 @@ impl DataGridPanel {
                     // projection points at nothing meaningful.
                     state.scroll_columns_to_start();
                 }
-                state.set_pk_columns(pk_indices);
+                if read_only_keys {
+                    state.set_read_only_pk_columns(pk_indices);
+                } else {
+                    state.set_pk_columns(pk_indices);
+                }
+                state.set_reference_row(read_only_keys);
                 state.set_insertable(is_insertable);
                 state.set_fk_columns(fk_indices);
                 state.set_readonly_columns(readonly_indices);
@@ -333,7 +348,12 @@ impl DataGridPanel {
             if let Some(sort) = initial_sort {
                 state.set_sort_without_emit(sort);
             }
-            state.set_pk_columns(pk_indices.clone());
+            if read_only_keys {
+                state.set_read_only_pk_columns(pk_indices.clone());
+            } else {
+                state.set_pk_columns(pk_indices.clone());
+            }
+            state.set_reference_row(read_only_keys);
             state.set_insertable(is_insertable);
             state.set_document_presentation(document_presentation, cx);
 

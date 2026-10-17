@@ -134,6 +134,8 @@ pub enum AppIcon {
     ChartNoAxesColumn,
     ChartBar,
     ChartPie,
+    ChartScatter,
+    Crosshair,
     ChartNetwork,
 
     // Database brands (SimpleIcons)
@@ -261,6 +263,8 @@ impl AppIcon {
             Self::ChartNoAxesColumn => "icons/ui/chart-no-axes-column.svg",
             Self::ChartBar => "icons/ui/chart-bar.svg",
             Self::ChartPie => "icons/ui/chart-pie.svg",
+            Self::ChartScatter => "icons/ui/chart-scatter.svg",
+            Self::Crosshair => "icons/ui/crosshair.svg",
             Self::ChartNetwork => "icons/ui/chart-network.svg",
             Self::BrandPostgres => "icons/brand/postgresql.svg",
             Self::BrandMysql => "icons/brand/mysql.svg",
@@ -472,9 +476,7 @@ mod tests {
             (DatabaseCategory::Document, AppIcon::Braces),
             (DatabaseCategory::KeyValue, AppIcon::KeyRound),
             (DatabaseCategory::ObjectStorage, AppIcon::Boxes),
-            (DatabaseCategory::Graph, AppIcon::Database),
             (DatabaseCategory::TimeSeries, AppIcon::Database),
-            (DatabaseCategory::WideColumn, AppIcon::Database),
             (DatabaseCategory::LogStream, AppIcon::Database),
         ];
 

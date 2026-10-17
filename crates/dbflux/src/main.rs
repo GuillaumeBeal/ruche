@@ -470,9 +470,14 @@ fn run_gui() {
 
         let mut main_window_options = WindowOptions {
             app_id: Some(channel.app_id().into()),
+            // On macOS the native title bar is transparent and its buttons sit
+            // inside the workspace title bar, so the window has one bar instead
+            // of two stacked ones.
             titlebar: Some(TitlebarOptions {
                 title: Some(channel.display_name().into()),
-                ..Default::default()
+                appears_transparent: cfg!(target_os = "macos"),
+                traffic_light_position: cfg!(target_os = "macos")
+                    .then_some(platform::MACOS_TRAFFIC_LIGHT_POSITION),
             }),
             // Request client-side decorations on Linux to enable native Wayland support.
             // On other platforms this returns Server explicitly.
