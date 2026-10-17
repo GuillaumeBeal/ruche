@@ -357,6 +357,17 @@ impl Workspace {
             .when(!client_decorated, |bar| {
                 bar.pr(ShellMetrics::TITLE_BAR_PADDING_X)
             })
+            .when(
+                cfg!(target_os = "macos") && !window.is_fullscreen(),
+                |bar| {
+                    bar.child(
+                        platform::csd_drag_area("title-bar-traffic-lights")
+                            .w(platform::MACOS_TRAFFIC_LIGHTS_INSET)
+                            .h_full()
+                            .flex_shrink_0(),
+                    )
+                },
+            )
             .child(
                 platform::csd_drag_area("title-bar-drag-area")
                     .flex_1()

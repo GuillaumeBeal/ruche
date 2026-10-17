@@ -18,9 +18,11 @@ use gpui::{
 use gpui::InteractiveElement;
 #[cfg(target_os = "linux")]
 use gpui::{ClickEvent, Decorations, ParentElement, StatefulInteractiveElement, Styled};
+#[cfg(target_os = "macos")]
+use gpui::{ClickEvent, MouseMoveEvent};
 #[cfg(target_os = "linux")]
 use gpui_component::ActiveTheme;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use gpui_component::InteractiveElementExt;
 
 /// A single breadcrumb entry for the CSD title bar.
@@ -39,6 +41,18 @@ pub type TitleBarHandler = Box<dyn Fn(&mut Window, &mut App) + 'static>;
 
 /// Title bar height for Linux CSD mode. Used for layout and client inset reporting.
 pub const TITLE_BAR_HEIGHT: gpui::Pixels = px(32.0);
+
+/// Top-left corner of the macOS window buttons in the main window, whose
+/// transparent native title bar lets them sit inside the workspace title bar
+/// (44 px at the default interface font size) instead of a bar of their own.
+pub const MACOS_TRAFFIC_LIGHT_POSITION: gpui::Point<gpui::Pixels> = gpui::Point {
+    x: px(14.0),
+    y: px(14.0),
+};
+
+/// Width the workspace title bar keeps clear for the macOS window buttons, past
+/// its own left padding.
+pub const MACOS_TRAFFIC_LIGHTS_INSET: gpui::Pixels = px(66.0);
 
 /// Returns `true` when the current Linux desktop is expected to prefer app-drawn
 /// title bars instead of server-side decorations.
@@ -217,9 +231,13 @@ pub fn prepare_client_decorations(window: &mut Window) -> bool {
     true
 }
 
-/// The window-management area of a CSD title bar: dragging moves the window,
-/// a double click maximizes or restores it, and a right click opens the
-/// window menu. Elsewhere it is a plain element.
+/// The window-management area of an app-drawn title bar: dragging moves the
+/// window, and a double click does what it does on the native title bar. On
+/// Linux CSD a double click maximizes or restores the window and a right click
+/// opens the window menu. On macOS, where the main window's native title bar is
+/// transparent, a double click follows the system's title bar setting, and the
+/// move starts on the first drag so the double click still registers.
+/// Elsewhere it is a plain element.
 pub fn csd_drag_area(id: impl Into<gpui::ElementId>) -> Stateful<gpui::Div> {
     let area = div().id(id);
 
@@ -238,6 +256,19 @@ pub fn csd_drag_area(id: impl Into<gpui::ElementId>) -> Stateful<gpui::Div> {
                 window.show_window_menu(event.position);
             },
         );
+
+    #[cfg(target_os = "macos")]
+    let area = area
+        .on_mouse_move(
+            |event: &MouseMoveEvent, window: &mut Window, _cx: &mut App| {
+                if event.pressed_button == Some(gpui::MouseButton::Left) {
+                    window.start_window_move();
+                }
+            },
+        )
+        .on_double_click(|_: &ClickEvent, window: &mut Window, _cx: &mut App| {
+            window.titlebar_double_click();
+        });
 
     area
 }
