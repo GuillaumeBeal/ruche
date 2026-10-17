@@ -273,12 +273,14 @@ fn patch_config_field(config: &mut DbConfig, field: &str, value: &ResolvedValue)
             access_key_id,
             endpoint,
             path_style,
+            bucket,
         } => match field {
             "region" => *region = val.to_string(),
             "profile" => *profile = Some(val.to_string()),
             "access_key_id" => *access_key_id = Some(val.to_string()),
             "endpoint" => *endpoint = Some(val.to_string()),
             "path_style" => *path_style = val == "true",
+            "bucket" => *bucket = Some(val.to_string()),
             _ => {}
         },
 

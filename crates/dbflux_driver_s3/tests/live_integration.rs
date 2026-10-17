@@ -26,6 +26,7 @@ fn minio_profile(minio: &MinioConfig) -> ConnectionProfile {
             access_key_id: Some(minio.access_key_id.clone()),
             endpoint: Some(minio.endpoint.clone()),
             path_style: true,
+            bucket: None,
         },
     )
 }
@@ -75,6 +76,49 @@ fn minio_connect_and_list_buckets_round_trips() -> Result<(), DbError> {
         let after = store.list_buckets()?;
         assert_eq!(after.len(), 1);
         assert_eq!(after[0].name, "dbflux-connect-test");
+
+        Ok(())
+    })
+}
+
+fn minio_profile_for_bucket(minio: &MinioConfig, bucket: &str) -> ConnectionProfile {
+    let mut profile = minio_profile(minio);
+    if let DbConfig::S3 { bucket: target, .. } = &mut profile.config {
+        *target = Some(bucket.to_string());
+    }
+    profile
+}
+
+#[test]
+#[ignore = "requires Docker daemon"]
+fn minio_connection_limited_to_one_bucket_lists_only_that_bucket() -> Result<(), DbError> {
+    containers::with_minio_endpoint(|minio| {
+        let store = connect_minio(&minio)?;
+        create_bucket(store.as_ref(), "dbflux-scoped-target")?;
+        create_bucket(store.as_ref(), "dbflux-scoped-other")?;
+
+        let driver = S3Driver::new();
+        let secret = SecretString::from(minio.secret_access_key.clone());
+
+        let scoped = driver.connect_object_store(
+            &minio_profile_for_bucket(&minio, "dbflux-scoped-target"),
+            Some(&secret),
+        )?;
+        let names: Vec<String> = scoped
+            .list_buckets()?
+            .into_iter()
+            .map(|bucket| bucket.name)
+            .collect();
+        assert_eq!(names, vec!["dbflux-scoped-target".to_string()]);
+
+        let missing = driver.connect_object_store(
+            &minio_profile_for_bucket(&minio, "dbflux-scoped-missing"),
+            Some(&secret),
+        );
+        assert!(
+            missing.is_err(),
+            "a missing bucket must fail the connection"
+        );
 
         Ok(())
     })
@@ -466,6 +510,7 @@ fn minio_endpoint_failures_are_actionable() {
             access_key_id: Some("minioadmin".to_string()),
             endpoint: Some("http://127.0.0.1:9".to_string()),
             path_style: true,
+            bucket: None,
         },
     );
     let secret = SecretString::from("minioadmin".to_string());

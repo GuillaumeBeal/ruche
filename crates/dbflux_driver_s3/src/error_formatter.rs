@@ -229,6 +229,7 @@ mod tests {
             access_key_id: None,
             endpoint: None,
             path_style: false,
+            bucket: None,
         }
     }
 
@@ -428,6 +429,7 @@ mod tests {
             access_key_id: None,
             endpoint: Some("http://localhost:9000".to_string()),
             path_style: true,
+            bucket: None,
         };
 
         let formatted = formatter.format_from_code(
