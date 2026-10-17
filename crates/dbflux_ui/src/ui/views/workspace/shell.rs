@@ -323,6 +323,7 @@ impl Workspace {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
+        platform::mark_main_window(window, cx);
         let client_decorated = platform::prepare_client_decorations(window);
         let window_controls = client_decorated.then(|| {
             let close = self.title_bar_close_handler(cx);
