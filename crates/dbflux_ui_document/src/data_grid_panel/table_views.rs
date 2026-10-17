@@ -1235,4 +1235,4 @@ fn now_ms() -> i64 {
 
 #[cfg(test)]
 #[path = "table_views_tests.rs"]
-mod tests;
+pub(super) mod tests;

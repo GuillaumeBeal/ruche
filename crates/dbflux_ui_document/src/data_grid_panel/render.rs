@@ -236,6 +236,9 @@ impl Render for DataGridPanel {
         self.apply_pending_neighbor_controls(window, cx);
         self.flush_aggregate_json(window, cx);
         self.ensure_table_view_controls(window, cx);
+        if self.filter_rules_open() {
+            self.sync_filter_rule_columns(cx);
+        }
         let st = self.derive_render_state(cx);
 
         // The Columns and Partitions views of a table replace the filter row,
@@ -293,6 +296,13 @@ impl Render for DataGridPanel {
                         cx,
                     ))
                 },
+            )
+            .when(
+                st.show_data_toolbar
+                    && !st.document_collection
+                    && !table_side_view
+                    && self.filter_rules_open(),
+                |d| d.child(self.render_filter_rules_panel(&st.theme, cx)),
             )
             .when(
                 st.show_data_toolbar && self.shows_table_read_estimate(),
@@ -1332,6 +1342,9 @@ impl DataGridPanel {
                         .child(field)
                         .when_some(toolbar_error, |d, err| d.child(err)),
                 )
+            })
+            .when(filter_shown && self.filter_rules_available(), |d| {
+                d.child(self.render_filter_rules_toggle(cx))
             })
             .when(filter_shown && self.can_toggle_view(cx), |d| {
                 let mode = self.view_config.mode;

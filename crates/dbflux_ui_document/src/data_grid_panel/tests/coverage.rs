@@ -178,3 +178,46 @@ fn the_sql_builder_rail_is_covered(cx: &mut TestAppContext) {
         "{checked:?}"
     );
 }
+
+/// The filter rules panel of a table, opened from the Toolbar submenu, with
+/// two rules so each one offers Remove.
+#[gpui::test]
+fn the_filter_rules_panel_is_covered(cx: &mut TestAppContext) {
+    use crate::data_grid_panel::context_menu::toolbar::ToolbarAction;
+    use crate::data_grid_panel::filter_rules::FilterRulesAction;
+
+    let (panel, window) = host_table_grid_with_rail(cx);
+    let capture = FrameCapture::observe(window);
+
+    let checked = assert_covered(&panel, &capture, window);
+    assert!(
+        checked.iter().any(|id| id == "grid-filter-rules-toggle"),
+        "{checked:?}"
+    );
+
+    super::run_toolbar_entry(
+        &panel,
+        ToolbarAction::FilterRules(FilterRulesAction::Toggle),
+        window,
+    );
+    super::run_toolbar_entry(
+        &panel,
+        ToolbarAction::FilterRules(FilterRulesAction::AddRule),
+        window,
+    );
+
+    let checked = assert_covered(&panel, &capture, window);
+    for expected in [
+        "grid-filter-rules-apply",
+        "-enabled",
+        "-remove",
+        "-add",
+        "-column",
+        "-operator",
+    ] {
+        assert!(
+            checked.iter().any(|id| id.contains(expected)),
+            "{expected} is drawn: {checked:?}"
+        );
+    }
+}

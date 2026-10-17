@@ -69,6 +69,19 @@ JSON、XML 或纯文本显示值（根据内容检测，且仅在确实能解析
 
 筛选输入框同样提供 Schema 感知自动补全（导航方式与构建器相同，参见[Schema 感知自动补全](QUERY_BUILDER.md#schema-感知自动补全)）。
 
+### 筛选规则
+
+在表上，筛选行中的 **规则** 按钮会在其下方打开一个规则列表，无需编写 SQL 即可构建 `WHERE` 筛选。每条规则有一个用于启用或停用它的复选框、一列、一个运算符和一个值，以及在其后添加规则或删除该规则的 `+` / `−` 按钮。可用的运算符取决于列的类型：
+
+- 文本：`=`、`≠`、包含、不包含、开头是、开头不是、结尾是、结尾不是、`LIKE`、`NOT LIKE`、`IN`、`BETWEEN`、为空、不为空、`IS NULL`、`IS NOT NULL`。
+- 数字：`=`、`≠`、`>`、`<`、`≥`、`≤`、`IN`、`BETWEEN`、`IS NULL`、`IS NOT NULL`。
+- 日期：`=`、`≠`、晚于、早于、不早于、不晚于、`BETWEEN`、`IS NULL`、`IS NOT NULL`。
+- 布尔值：为真、为假、`IS NULL`、`IS NOT NULL`。
+
+`BETWEEN` 接受两个值，`IN` 接受以逗号分隔的列表。为数字列输入的值如果能读作数字，就会作为数字发送。连接的驱动不支持的运算符不会出现。
+
+在规则下方选择 **AND（所有规则）** 或 **OR（任一规则）**，然后按 **应用筛选**（或在值中按 `Enter`）。DBFlux 会把对应的条件按该连接的引号规则写入 `WHERE` 输入框并重新加载行，因此你可以查看或修改生成的 SQL。已停用或没有值的规则会被跳过，若没有剩余规则则清除筛选。标签页打开期间，规则会保持原样。使用键盘时，网格上下文菜单（`m`）的“工具栏”项会列出“规则”按钮和已打开面板的每个控件。
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../images/results/filtering-dark.webp">
   <img src="../images/results/filtering-light.webp" alt="在筛选栏中输入 WHERE 条件后筛选出的 customers 表">

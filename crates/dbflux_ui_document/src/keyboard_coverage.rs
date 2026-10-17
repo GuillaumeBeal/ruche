@@ -110,6 +110,40 @@ pub(crate) const DATA_GRID: SurfaceRegistry = SurfaceRegistry {
             KeyboardPath::Command(Command::CycleDocumentView),
         ),
         ("open-builder-btn", KeyboardPath::Menu("open-builder")),
+        // The Rules button of a table's filter row and the controls of its
+        // rules panel: each is an entry of the Toolbar submenu, per rule.
+        (
+            "grid-filter-rules-toggle",
+            KeyboardPath::Menu("filter-rules"),
+        ),
+        (
+            "grid-filter-rules-apply",
+            KeyboardPath::Menu("filter-rules-apply"),
+        ),
+        (
+            "grid-filter-rules-combinator.*",
+            KeyboardPath::Menu("filter-rules-combinator"),
+        ),
+        (
+            "grid-filter-rule-*-enabled",
+            KeyboardPath::Menu("filter-rule-*-enable"),
+        ),
+        (
+            "grid-filter-rule-*-column.*",
+            KeyboardPath::Menu("filter-rule-*-column"),
+        ),
+        (
+            "grid-filter-rule-*-operator.*",
+            KeyboardPath::Menu("filter-rule-*-operator"),
+        ),
+        (
+            "grid-filter-rule-*-remove",
+            KeyboardPath::Menu("filter-rule-*-remove"),
+        ),
+        (
+            "grid-filter-rule-*-add",
+            KeyboardPath::Menu("filter-rule-*-add"),
+        ),
         ("builder-notice-edit", KeyboardPath::Menu("open-builder")),
         ("builder-notice-reset", KeyboardPath::Menu("reset-builder")),
         (

@@ -105,6 +105,36 @@ El input de filtro también ofrece autocompletado consciente del schema (misma
 navegación que el builder — ver [Autocompletado consciente del
 schema](QUERY_BUILDER.md#autocompletado-consciente-del-schema)).
 
+### Reglas de filtro
+
+En una tabla, el botón **Reglas** de la fila de filtro abre debajo una lista de
+reglas para construir el filtro `WHERE` sin escribir SQL. Cada regla tiene una
+casilla que la activa o desactiva, una columna, un operador y un valor, y botones
+`+` / `−` que agregan una regla después de ella o la quitan. Los operadores
+dependen del tipo de la columna:
+
+- Texto: `=`, `≠`, contiene, no contiene, empieza por, no empieza por, termina
+  en, no termina en, `LIKE`, `NOT LIKE`, `IN`, `BETWEEN`, está vacío, no está
+  vacío, `IS NULL`, `IS NOT NULL`.
+- Números: `=`, `≠`, `>`, `<`, `≥`, `≤`, `IN`, `BETWEEN`, `IS NULL`,
+  `IS NOT NULL`.
+- Fechas: `=`, `≠`, es posterior a, es anterior a, es igual o posterior a, es
+  igual o anterior a, `BETWEEN`, `IS NULL`, `IS NOT NULL`.
+- Booleanos: es verdadero, es falso, `IS NULL`, `IS NOT NULL`.
+
+`BETWEEN` toma dos valores e `IN` una lista separada por comas. Un valor escrito
+para una columna numérica se envía como número cuando se lee como tal. No se
+ofrecen los operadores que el driver de la conexión no soporta.
+
+Debajo de las reglas, elige **AND (todas las reglas)** u **OR (cualquier
+regla)** y pulsa **Aplicar filtros** (o `Enter` en un valor). DBFlux escribe la
+condición correspondiente en el input `WHERE`, con las comillas de la conexión,
+y recarga las filas, así puedes leer o editar el SQL generado. Las reglas
+desactivadas o sin valor se ignoran, y si no queda ninguna se limpia el filtro.
+Las reglas se conservan mientras la pestaña está abierta. Desde el teclado, la
+entrada Barra de herramientas del menú contextual de la grilla (`m`) lista el
+botón Reglas y cada control del panel abierto.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../images/results/filtering-dark.webp">
   <img src="../images/results/filtering-light.webp" alt="La tabla customers filtrada con una condición WHERE escrita en la barra de filtro">
