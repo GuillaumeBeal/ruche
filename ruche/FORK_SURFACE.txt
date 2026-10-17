@@ -30,3 +30,6 @@ Cargo.lock
 crates/dbflux_app/src/portability.rs
 crates/dbflux_portability/Cargo.toml
 crates/dbflux_portability/src/external/*
+# up/macos-integrated-title-bar
+crates/dbflux/src/main.rs
+crates/dbflux_ui/src/ui/views/workspace/shell.rs
