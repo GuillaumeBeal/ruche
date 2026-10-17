@@ -100,7 +100,7 @@ pub fn secure_db_sidecars(db_path: &Path) -> Result<(), StorageError> {
 /// - Session artifacts and scratch files
 pub fn data_dir() -> Result<PathBuf, StorageError> {
     let base = dirs::data_dir().ok_or(StorageError::DataDirUnavailable)?;
-    let dir = base.join("dbflux");
+    let dir = base.join("ruche");
     ensure_private_dir(&dir)?;
     Ok(dir)
 }
@@ -160,7 +160,7 @@ pub fn set_nightly_shares_stable_db(enabled: bool) -> Result<(), StorageError> {
 /// database via [`set_nightly_shares_stable_db`].
 pub fn dbflux_db_path() -> Result<PathBuf, StorageError> {
     let file_name = if nightly_shares_stable_db() {
-        "dbflux.db"
+        "ruche.db"
     } else {
         dbflux_core::ReleaseChannel::current().db_file_name()
     };

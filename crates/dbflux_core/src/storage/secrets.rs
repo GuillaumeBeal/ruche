@@ -31,7 +31,7 @@ impl SecretStore for NoopSecretStore {
     }
 }
 
-const SERVICE_NAME: &str = "dbflux";
+const SERVICE_NAME: &str = "ruche";
 
 /// How long a single keyring call may take before DBFlux gives up on it.
 ///

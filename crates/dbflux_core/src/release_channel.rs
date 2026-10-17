@@ -41,16 +41,16 @@ impl ReleaseChannel {
     /// instead of sharing its taskbar entry and icon association.
     pub fn app_id(self) -> &'static str {
         match self {
-            Self::Nightly => "dbflux-nightly",
-            Self::Stable | Self::Rc => "dbflux",
+            Self::Nightly => "ruche-nightly",
+            Self::Stable | Self::Rc => "ruche",
         }
     }
 
     /// Human-facing application name used for window titles and bundle metadata.
     pub fn display_name(self) -> &'static str {
         match self {
-            Self::Nightly => "DBFlux Nightly",
-            Self::Stable | Self::Rc => "DBFlux",
+            Self::Nightly => "Ruche Nightly",
+            Self::Stable | Self::Rc => "Ruche",
         }
     }
 
@@ -61,8 +61,8 @@ impl ReleaseChannel {
     /// both channels side by side.
     pub fn db_file_name(self) -> &'static str {
         match self {
-            Self::Nightly => "dbflux-nightly.db",
-            Self::Stable | Self::Rc => "dbflux.db",
+            Self::Nightly => "ruche-nightly.db",
+            Self::Stable | Self::Rc => "ruche.db",
         }
     }
 }
