@@ -585,8 +585,8 @@ pub fn external_candidate_to_profile(
 }
 
 /// Persists one confirmed external candidate through `deps`, writing its
-/// recovered secret (when present) under the new connection's own
-/// `connection_secret_ref`.
+/// recovered secrets (when present) under the new connection's own
+/// `connection_secret_ref` and `ssh_secret_ref`.
 ///
 /// Takes the candidate by value because its `secret` field is not `Clone`
 /// (`secrecy::SecretString` deliberately does not implement `Clone` for
@@ -600,18 +600,23 @@ pub fn persist_external_candidate(
     let profile = external_candidate_to_profile(&candidate);
     let name = candidate.name;
     let secret = candidate.secret;
+    let ssh_secret = candidate.ssh_secret;
     let profile_id = profile.id;
+    let ssh_secret_ref = profile.ssh_secret_ref();
     let driver_id = profile.driver_id().to_string();
 
     match deps.add_connection(profile) {
         ConnectionInsertResult::Ok => {
             outcome.succeeded.push(name.clone());
 
-            if let Some(secret) = secret {
-                let secret_ref = dbflux_core::connection_secret_ref(&profile_id);
-                if !deps.write_secret(&secret_ref, &secret) {
-                    outcome.secret_failures.push(name);
-                }
+            let secret_written = secret.is_none_or(|secret| {
+                deps.write_secret(&dbflux_core::connection_secret_ref(&profile_id), &secret)
+            });
+            let ssh_secret_written =
+                ssh_secret.is_none_or(|secret| deps.write_secret(&ssh_secret_ref, &secret));
+
+            if !secret_written || !ssh_secret_written {
+                outcome.secret_failures.push(name);
             }
         }
         ConnectionInsertResult::NeedsDriver => {
@@ -1931,6 +1936,7 @@ mod tests {
             },
             kind: dbflux_core::DbKind::SQLite,
             secret: secret.map(|s| SecretString::from(s.to_string())),
+            ssh_secret: None,
             secret_skip_reason: None,
         }
     }
@@ -1984,6 +1990,35 @@ mod tests {
         );
         assert_eq!(outcome.succeeded, vec!["Demo".to_string()]);
         assert_eq!(outcome.secret_failures, vec!["Demo".to_string()]);
+    }
+
+    #[test]
+    fn persist_external_candidate_records_one_failure_when_both_secrets_fail() {
+        let mut candidate = make_external_candidate("Demo", Some("s3cret"));
+        candidate.ssh_secret = Some(SecretString::from("passphrase".to_string()));
+        let mut deps = FakePersistence::all_drivers().with_all_secrets_failing();
+        let mut outcome = ExternalPersistOutcome::default();
+
+        persist_external_candidate(candidate, &mut deps, &mut outcome);
+
+        assert_eq!(outcome.succeeded, vec!["Demo".to_string()]);
+        assert_eq!(outcome.secret_failures, vec!["Demo".to_string()]);
+    }
+
+    #[test]
+    fn persist_external_candidate_writes_ssh_secret_without_a_connection_secret() {
+        let mut candidate = make_external_candidate("Demo", None);
+        candidate.ssh_secret = Some(SecretString::from("passphrase".to_string()));
+        let mut deps = FakePersistence::all_drivers().with_all_secrets_failing();
+        let mut outcome = ExternalPersistOutcome::default();
+
+        persist_external_candidate(candidate, &mut deps, &mut outcome);
+
+        assert_eq!(
+            outcome.secret_failures,
+            vec!["Demo".to_string()],
+            "the SSH secret must be written even when the connection has no password"
+        );
     }
 
     #[test]

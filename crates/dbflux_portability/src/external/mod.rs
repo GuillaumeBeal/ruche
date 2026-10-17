@@ -94,10 +94,16 @@ pub struct ExternalImportCandidate {
     /// accidentally logged or serialized by a careless caller.
     pub secret: Option<SecretString>,
 
+    /// Plaintext SSH tunnel secret (key passphrase or SSH password) recovered
+    /// from the source format, for a `config` whose inline `ssh_tunnel` needs
+    /// one. It is written under the new connection's SSH secret reference.
+    pub ssh_secret: Option<SecretString>,
+
     /// Set when a secret exists in the source but could not be carried over
-    /// (e.g. Beekeeper's per-install encryption key, or a DBeaver credentials
-    /// file that failed to decrypt). The connection itself is still a valid
-    /// candidate; only the secret is missing.
+    /// (e.g. a Beekeeper database copied without its install key, or a DBeaver
+    /// credentials file that failed to decrypt), or when part of the source
+    /// configuration has no DBFlux equivalent. The connection itself is still
+    /// a valid candidate; only that part is missing.
     pub secret_skip_reason: Option<String>,
 }
 

@@ -29,6 +29,9 @@ age = { workspace = true, optional = true }
 rusqlite = { workspace = true }
 aes = { workspace = true }
 cbc = { workspace = true, features = ["alloc"] }
+hex = { workspace = true }
+hmac = "0.13"
+sha2 = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"
