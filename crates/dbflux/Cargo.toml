@@ -42,6 +42,14 @@ libc = "0.2"
 [target.'cfg(windows)'.build-dependencies]
 embed-resource = "3.0"
 
+# Opt-in for macOS machines without a usable Metal compiler (Command Line Tools
+# only, or the Xcode license not accepted): GPUI then compiles its shaders at
+# runtime instead of at build time. Enabled by the `runtime-shaders` feature.
+[target.'cfg(target_os = "macos")'.dependencies.gpui-pre-apple]
+version = "=0.3.9"
+optional = true
+features = ["runtime_shaders"]
+
 # The binary registers drivers and runtime features through `dbflux_app`, not
 # directly. Optional dep declarations on driver crates would be dead weight
 # (no `use ...` in this crate), so they live on `dbflux_app` instead. The few
@@ -78,6 +86,7 @@ mcp = ["dbflux_app/mcp", "dbflux_ui/mcp"]
 # Development-only UI automation bridge (gpui-mcp). Never part of `default`.
 ui-automation = ["dbflux_ui/ui-automation"]
 vendored-openssl = ["dbflux_ssh/vendored-openssl"]
+runtime-shaders = ["dep:gpui-pre-apple"]
 
 [dev-dependencies]
 dbflux_test_support.workspace = true
@@ -97,7 +106,7 @@ serde_json.workspace = true
 # library `gpui_platform`, so main.rs opens the platform through
 # `gpui_platform::application()` and no source path can ever contain the
 # package name.
-ignored = ["tokio", "dbflux_ssh", "gpui-pre-platform"]
+ignored = ["tokio", "dbflux_ssh", "gpui-pre-platform", "gpui-pre-apple"]
 
 [lints]
 workspace = true
